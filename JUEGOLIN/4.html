@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Juego de Números</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: #d5f2f9;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    #header-img {
+      max-width: 100%;
+      height: auto;
+      max-height: 150px;
+      margin-bottom: 10px;
+    }
+    .instrucciones {
+      font-size: 18px;
+      max-width: 600px;
+      margin: 10px auto 20px;
+      line-height: 1.4;
+      color: #333;
+    }
+    #error-msg {
+      color: red;
+      font-weight: bold;
+      font-size: 20px;
+      height: 30px;
+      margin-bottom: 15px;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    .targets {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .targets .target-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .targets img {
+      width: 100px;
+      height: 100px;
+      border: 2px solid #333;
+      border-radius: 10px;
+      background: white;
+      padding: 5px;
+    }
+    .drop-zone {
+      margin-top: 5px;
+      min-height: 30px;
+      width: 100px;
+      border: 2px dashed #999;
+      border-radius: 5px;
+      padding: 5px;
+      text-align: center;
+    }
+    .matched {
+      background: #d4edda;
+      border-color: #28a745;
+      color: #28a745;
+      font-weight: bold;
+    }
+    .numbers {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+    }
+    .number-box {
+      width: 100px;
+      height: 100px;
+      border: 2px solid #333;
+      border-radius: 10px;
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .number-box img {
+      max-width: 80px;
+      max-height: 80px;
+      pointer-events: none;
+    }
+    #congrats {
+      font-size: 24px;
+      color: green;
+      margin-top: 30px;
+      display: none;
+    }
+    #restart-btn {
+      display: none;
+      margin-top: 20px;
+      padding: 10px 25px;
+      font-size: 18px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+    }
+    .nav-buttons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+    .nav-btn {
+      width: 50px;
+      height: 50px;
+      font-size: 24px;
+      border: none;
+      border-radius: 50%;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      user-select: none;
+    }
+    .nav-btn:hover {
+      background-color: #0056b3;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+
+  <div style="text-align: center;">
+    <img id="header-img" src="NÚMEROS.png" alt="Imagen del juego de números" />
+  </div>
+
+  <div class="instrucciones" id="instrucciones">
+    Arrastra el número a la imagen correspondiente. Haz clic en la imagen para escuchar el número.
+  </div>
+
+  <div id="error-msg"></div>
+
+  <div class="targets" id="targets"></div>
+  <div class="numbers" id="numbers"></div>
+
+  <div id="congrats">¡Muy bien! Has unido todos correctamente.</div>
+  <button id="restart-btn" onclick="initGame()">Reiniciar</button>
+
+  <div class="nav-buttons">
+    <button class="nav-btn" onclick="location.href='3.html'" title="Regresar">←</button>
+    <button class="nav-btn" onclick="location.href='5.html'" title="Avanzar">→</button>
+  </div>
+
+  <script>
+    const targetsData = [
+      { num: '10', img: 'DIEZ.png' },
+      { num: '5', img: 'CINCO.png' },
+      { num: '8', img: 'OCHO.png' },
+      { num: '7', img: 'SIETE.png' },
+      { num: '3', img: 'TRES.png' },
+      { num: '6', img: 'SEIS.png' },
+      { num: '2', img: 'DOS.png' },
+      { num: '9', img: 'NUEVE.png' },
+      { num: '4', img: 'CUATRO.png' },
+      { num: '1', img: 'UNO.png' }
+    ];
+
+    const numbersData = [
+      { num: '1', img: '1.png' },
+      { num: '2', img: '2.png' },
+      { num: '3', img: '3.png' },
+      { num: '4', img: '4.png' },
+      { num: '5', img: '5.png' },
+      { num: '6', img: '6.png' },
+      { num: '7', img: '7.png' },
+      { num: '8', img: '8.png' },
+      { num: '9', img: '9.png' },
+      { num: '10', img: '10.png' }
+    ];
+
+    const targetsContainer = document.getElementById('targets');
+    const numbersContainer = document.getElementById('numbers');
+    const errorMsg = document.getElementById('error-msg');
+    const congrats = document.getElementById('congrats');
+    const restartBtn = document.getElementById('restart-btn');
+    const instruccionesDiv = document.getElementById('instrucciones');
+
+    let matchedCount = 0;
+
+    function playAudio(text) {
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'es-ES';
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function showError(message) {
+      errorMsg.textContent = message;
+      errorMsg.style.opacity = '1';
+      playAudio('Error, intenta de nuevo');
+      setTimeout(() => errorMsg.style.opacity = '0', 2000);
+    }
+
+    function initGame() {
+      matchedCount = 0;
+      congrats.style.display = 'none';
+      restartBtn.style.display = 'none';
+      errorMsg.style.opacity = '0';
+      targetsContainer.innerHTML = '';
+      numbersContainer.innerHTML = '';
+
+      targetsData.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'target-box';
+        div.innerHTML = `
+          <img src="${item.img}" alt="Imagen ${item.num}" />
+          <div class="drop-zone" data-num="${item.num}"></div>
+        `;
+        targetsContainer.appendChild(div);
+      });
+
+      numbersData.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'number-box';
+        div.setAttribute('draggable', 'true');
+        div.dataset.num = item.num;
+        div.innerHTML = `<img src="${item.img}" alt="Número ${item.num}" />`;
+        div.onclick = () => playAudio(item.num);
+        numbersContainer.appendChild(div);
+      });
+
+      addDragAndDropListeners();
+
+      playAudio("NÚMEROS");
+      setTimeout(() => {
+        playAudio(instruccionesDiv.textContent);
+      }, 1500);
+    }
+
+    function addDragAndDropListeners() {
+      const numberBoxes = document.querySelectorAll('.number-box');
+      const zones = document.querySelectorAll('.drop-zone');
+
+      numberBoxes.forEach(box => {
+        box.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', box.dataset.num);
+          e.dataTransfer.effectAllowed = 'move';
+        });
+      });
+
+      zones.forEach(zone => {
+        zone.addEventListener('dragover', e => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        });
+
+        zone.addEventListener('drop', e => {
+          e.preventDefault();
+          const num = e.dataTransfer.getData('text/plain');
+          const dragged = document.querySelector(`.number-box[data-num="${num}"]`);
+
+          if (num === zone.dataset.num) {
+            if (!zone.classList.contains('matched')) {
+              matchedCount++;
+            }
+            zone.textContent = '';
+            zone.classList.add('matched');
+            dragged.style.visibility = 'hidden';
+
+            if (matchedCount === zones.length) {
+              congrats.style.display = 'block';
+              restartBtn.style.display = 'inline-block';
+            }
+          } else {
+            showError('❌ ¡Error! Intenta de nuevo 😊');
+          }
+        });
+      });
+    }
+
+    window.onload = initGame;
+  </script>
+
+</body>
+</html>

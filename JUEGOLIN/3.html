@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Juego de las Vocales</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: #f0f8ff;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    .instrucciones {
+      font-size: 18px;
+      max-width: 600px;
+      margin: 10px auto 20px;
+      line-height: 1.4;
+      color: #333;
+    }
+    #error-msg {
+      color: red;
+      font-weight: bold;
+      font-size: 20px;
+      height: 30px;
+      margin-bottom: 15px;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      gap: 80px;
+      flex-wrap: wrap;
+    }
+    .icons {
+      display: grid;
+      grid-template-columns: 120px 120px;
+      gap: 20px 40px;
+      justify-content: center;
+    }
+    .icon-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .icon-box img {
+      width: 100px;
+      height: 100px;
+      padding: 5px;
+      border: 2px solid #333;
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+    }
+    .drop-zone {
+      margin-top: 5px;
+      min-height: 30px;
+      width: 120px;
+      border: 2px dashed #999;
+      border-radius: 5px;
+      padding: 5px;
+      text-align: center;
+    }
+    .matched {
+      background: #d4edda;
+      border-color: #28a745;
+      color: #28a745;
+      font-weight: bold;
+    }
+    .vocales {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .vocal-box {
+      border: 2px solid #333;
+      border-radius: 10px;
+      padding: 10px;
+      background: #87cefa;
+      color: #000;
+      cursor: pointer;
+      user-select: none;
+      font-size: 20px;
+      width: 100px;
+    }
+    #congrats {
+      font-size: 24px;
+      color: green;
+      margin-top: 30px;
+      display: none;
+    }
+    #restart-btn {
+      display: none;
+      margin-top: 20px;
+      padding: 10px 25px;
+      font-size: 18px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+    }
+    .nav-buttons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+    .nav-btn {
+      width: 50px;
+      height: 50px;
+      font-size: 24px;
+      border: none;
+      border-radius: 50%;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      user-select: none;
+    }
+    .nav-btn:hover {
+      background-color: #0056b3;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+
+  <div style="text-align: center; margin-bottom: 10px;">
+    <img src="VOCALES.png" alt="Imagen del juego de vocales" style="max-width: 100%; height: auto; max-height: 150px;" />
+  </div>
+
+  <div class="instrucciones" id="instrucciones">
+    INSTRUCCIONES: Arrastra el nombre de la vocal al dibujo que corresponde. Haz clic en el dibujo o en la vocal para escuchar su nombre.
+  </div>
+
+  <div id="error-msg"></div>
+
+  <div class="container">
+    <div class="icons" id="icons"></div>
+    <div class="vocales" id="vocales"></div>
+  </div>
+
+  <div id="congrats">¡Muy bien! Has unido todas las vocales correctamente.</div>
+  <button id="restart-btn" onclick="initGame()">Reiniciar</button>
+
+  <div class="nav-buttons">
+    <button class="nav-btn" onclick="location.href='2.html'">←</button>
+    <button class="nav-btn" onclick="location.href='4.html'">→</button>
+  </div>
+
+  <script>
+    const vocalItems = [
+      { name: 'A', img: 'ARAÑA.png', palabra: 'Araña' },
+      { name: 'E', img: 'G.png', palabra: 'Elefante' },
+      { name: 'I', img: 'IGLESIA.png', palabra: 'Iglesia' },
+      { name: 'O', img: 'OSO.png', palabra: 'Oso' },
+      { name: 'U', img: 'UVAS.png', palabra: 'Uva' },
+    ];
+
+    const iconsContainer = document.getElementById('icons');
+    const vocalesContainer = document.getElementById('vocales');
+    const errorMsg = document.getElementById('error-msg');
+    const congrats = document.getElementById('congrats');
+    const restartBtn = document.getElementById('restart-btn');
+    const instruccionesDiv = document.getElementById('instrucciones');
+
+    let matchedCount = 0;
+
+    function shuffle(array) {
+      let currentIndex = array.length, randomIndex;
+      while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+      }
+      return array;
+    }
+
+    function playAudio(text) {
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'es-ES';
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function showError(message) {
+      errorMsg.textContent = message;
+      errorMsg.style.opacity = '1';
+      playAudio('Error, intenta de nuevo');
+      setTimeout(() => errorMsg.style.opacity = '0', 2000);
+    }
+
+    function speakInstructions() {
+      playAudio(instruccionesDiv.textContent);
+    }
+
+    function initGame() {
+      matchedCount = 0;
+      congrats.style.display = 'none';
+      restartBtn.style.display = 'none';
+      errorMsg.style.opacity = '0';
+      iconsContainer.innerHTML = '';
+      vocalesContainer.innerHTML = '';
+
+      const shuffledItems = shuffle([...vocalItems]);
+      const shuffledVocales = shuffle([...vocalItems]);
+
+      shuffledItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'icon-box';
+        div.innerHTML = `<img src="${item.img}" alt="${item.palabra}" title="${item.palabra}" draggable="true" data-name="${item.name}" />`;
+        div.onclick = () => playAudio(item.palabra);
+        iconsContainer.appendChild(div);
+      });
+
+      shuffledVocales.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'vocal-box';
+        div.textContent = item.name;
+        div.setAttribute('draggable', 'true');
+        div.dataset.name = item.name;
+        div.onclick = () => playAudio(item.name);
+        vocalesContainer.appendChild(div);
+      });
+
+      addDragAndDropListeners();
+
+      // Audio al iniciar: primero "VOCAL", luego las instrucciones
+      playAudio("VOCAL");
+      setTimeout(() => {
+        speakInstructions();
+      }, 1500);
+    }
+
+    function addDragAndDropListeners() {
+      const iconImgs = document.querySelectorAll('.icon-box img');
+      const vocalBoxes = document.querySelectorAll('.vocal-box');
+
+      vocalBoxes.forEach(vocal => {
+        vocal.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', vocal.dataset.name);
+          e.dataTransfer.effectAllowed = 'move';
+        });
+      });
+
+      iconImgs.forEach(icon => {
+        icon.addEventListener('dragover', e => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        });
+
+        icon.addEventListener('drop', e => {
+          e.preventDefault();
+          const draggedName = e.dataTransfer.getData('text/plain');
+          if (draggedName === icon.dataset.name) {
+            matchedCount++;
+            icon.style.border = '3px solid green';
+            vocalBoxes.forEach(vocal => {
+              if (vocal.dataset.name === draggedName) {
+                vocal.style.display = 'none';
+              }
+            });
+            if (matchedCount === vocalBoxes.length) {
+              congrats.style.display = 'block';
+              restartBtn.style.display = 'inline-block';
+            }
+          } else {
+            showError('❌ ¡Error! Intenta de nuevo 😊');
+          }
+        });
+      });
+    }
+
+    window.onload = initGame;
+  </script>
+
+</body>
+</html>
